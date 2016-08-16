@@ -17,6 +17,7 @@
 	<name>CIM Resource Adapter (RAR)</name>
 
 	<properties>
+		<skipTests>true</skipTests>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<!-- plugins versions -->

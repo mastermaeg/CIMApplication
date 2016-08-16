@@ -32,7 +32,8 @@ class ShortCircuit extends Serializable
     {
         // paragraph 1
 
-        val rdd = sqlContext.read.format ("ch.ninecode.cim").load ("hdfs://sandbox:9000/data/20160803-16_NIS_CIM_Export_b4_Bruegg.rdf")
+        val filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
+        val rdd = sqlContext.read.format ("ch.ninecode.cim").load (filename)
         rdd.count
         def get (name: String): RDD[Element] =
         {

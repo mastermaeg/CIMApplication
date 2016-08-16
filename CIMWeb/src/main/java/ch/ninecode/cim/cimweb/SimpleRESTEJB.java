@@ -52,6 +52,7 @@ public class SimpleRESTEJB
     @GET
     public String ejb()
     {
+    	String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
         StringBuffer out = new StringBuffer ();
         Connection connection = getConnection (out);
         if (null != connection)
@@ -74,7 +75,7 @@ public class SimpleRESTEJB
                 spec.setFunctionName (CIMInteractionSpec.READ_FUNCTION);
                 final MappedRecord input = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
                 input.setRecordShortDescription ("the parameters for this read operation");
-                input.put ("filename", "hdfs://sandbox:9000/data/NIS_CIM_Export_NS_INITIAL_FILL.rdf");
+                input.put ("filename", filename);
                 final MappedRecord output = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.OUTPUT);
                 output.setRecordShortDescription ("the results of the read operation");
                 final Interaction interaction = connection.createInteraction ();
@@ -170,11 +171,11 @@ public class SimpleRESTEJB
         CIMConnectionSpec ret;
 
         ret = new CIMConnectionSpec ();
-        ret.setUserName ("derrick"); // not currently used
-        ret.setPassword ("secret"); // not currently used
+        //ret.setUserName ("Markus"); // not currently used
+        //ret.setPassword ("secret"); // not currently used
         ret.getProperties ().put ("spark.driver.memory", "1g");
         ret.getProperties ().put ("spark.executor.memory", "4g");
-        ret.getJars ().add ("/home/derrick/code/CIMScala/target/CIMScala-1.6.0-SNAPSHOT.jar");
+        ret.getJars ().add ("C:\\Users\\Markus\\OneDrive\\workspace_win\\CIMScala\\target\\CIMScala-1.6.0-SNAPSHOT.jar");
 
         return (ret);
     }

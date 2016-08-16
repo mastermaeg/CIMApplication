@@ -39,6 +39,9 @@ import ch.ninecode.cim.connector.CIMResultSet;
 @Path("/EnergyConsumer")
 public class EnergyConsumer
 {
+	
+	private String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
+	
     @Resource (lookup="openejb:Resource/CIMConnector.rar")
     CIMConnectionFactory factory;
 
@@ -51,11 +54,11 @@ public class EnergyConsumer
         CIMConnectionSpec ret;
 
         ret = new CIMConnectionSpec ();
-        ret.setUserName ("derrick"); // not currently used
-        ret.setPassword ("secret"); // not currently used
+        //ret.setUserName ("derrick"); // not currently used
+        //ret.setPassword ("secret"); // not currently used
         ret.getProperties ().put ("spark.driver.memory", "1g");
         ret.getProperties ().put ("spark.executor.memory", "4g");
-        ret.getJars ().add ("/home/derrick/code/CIMScala/target/CIMScala-1.6.0-SNAPSHOT.jar");
+        //ret.getJars ().add ("/home/derrick/code/CIMScala/target/CIMScala-1.6.0-SNAPSHOT.jar");
 
         return (ret);
     }
@@ -80,7 +83,7 @@ public class EnergyConsumer
                         spec.setFunctionName (CIMInteractionSpec.GET_DATAFRAME_FUNCTION);
                         final MappedRecord input = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
                         input.setRecordShortDescription ("record containing the file name with key filename and sql query with key query");
-                        input.put ("filename", "hdfs://sandbox:9000/data/NIS_CIM_Export_NS_INITIAL_FILL.rdf");
+                        input.put ("filename", filename);
                         input.put ("query", "select s.sup.sup.sup.sup.mRID mRID, s.sup.sup.sup.sup.aliasName aliasName, s.sup.sup.sup.sup.name name, s.sup.sup.sup.sup.description description, p.xPosition, p.yPosition from EnergyConsumer s, PositionPoint p where s.sup.sup.sup.Location = p.Location and p.sequenceNumber = 0");
                         final Interaction interaction = connection.createInteraction ();
                         final Record output = interaction.execute (spec, input);

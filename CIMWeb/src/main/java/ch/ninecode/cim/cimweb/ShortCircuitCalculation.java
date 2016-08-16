@@ -1,10 +1,20 @@
 package ch.ninecode.cim.cimweb;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+
+import javax.naming.Context;
+import java.util.Properties;
+import javax.naming.InitialContext;
+import javax.naming.NameNotFoundException;
+import javax.naming.NamingEnumeration;
+import javax.naming.NamingException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -51,13 +61,14 @@ public class ShortCircuitCalculation
         CIMConnectionSpec ret;
 
         ret = new CIMConnectionSpec ();
-        ret.setUserName ("derrick"); // not currently used
-        ret.setPassword ("secret"); // not currently used
+//        ret.setUserName ("derrick"); // not currently used
+//        ret.setPassword ("secret"); // not currently used
         ret.getProperties ().put ("spark.driver.memory", "1g");
         ret.getProperties ().put ("spark.executor.memory", "4g");
-        ret.getJars ().add ("/home/derrick/code/CIMScala/target/CIMScala-1.6.0-SNAPSHOT.jar");
-        ret.getJars ().add ("/home/derrick/code/CIMApplication/ShortCircuit/target/ShortCircuit-1.0-SNAPSHOT.jar");
-
+        //ret.getJars ().add ("/home/derrick/code/CIMScala/target/CIMScala-1.6.0-SNAPSHOT.jar");
+        //ret.getJars ().add ("/home/derrick/code/CIMApplication/ShortCircuit/target/ShortCircuit-1.0-SNAPSHOT.jar");
+        ret.getJars ().add ("/home/maeg/nis/CIMScala-1.6.0-SNAPSHOT.jar");
+        ret.getJars ().add ("/home/maeg/nis/ShortCircuit-1.0-SNAPSHOT.jar");
         return (ret);
     }
 
@@ -66,7 +77,44 @@ public class ShortCircuitCalculation
     @Produces({"text/plain", "application/json"})
     public String GetShortCircuitData ()
     {
+    	Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+    	log.setLevel(Level.INFO);
+    	log.info("GetShortCircuitData, logger log.servere");
+    	
+    	String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
+    	
         StringBuffer out = new StringBuffer ();
+        
+        if (factory == null) {
+        	{
+                final Properties properties = new Properties ();
+                try
+                {
+                    Context context = new InitialContext (properties);
+                    factory = (CIMConnectionFactory) context.lookup ("openejb:Resource/CIMConnector.rar");
+                }
+                catch (NameNotFoundException nnfe)
+                {
+                    out.append ("NameNotFoundException");
+                    out.append ("\n");
+                    StringWriter string = new StringWriter ();
+                    PrintWriter writer = new PrintWriter (string);
+                    nnfe.printStackTrace (writer);
+                    out.append (string.toString ());
+                    writer.close ();
+                }
+                catch (NamingException e)
+                {
+                    out.append ("NamingException");
+                    out.append ("\n");
+                    StringWriter string = new StringWriter ();
+                    PrintWriter writer = new PrintWriter (string);
+                    e.printStackTrace (writer);
+                    out.append (string.toString ());
+                    writer.close ();
+                }
+            };
+        }
         if (null != factory)
         {
             Connection connection;
@@ -81,7 +129,7 @@ public class ShortCircuitCalculation
                         spec.setFunctionName (CIMInteractionSpec.EXECUTE_METHOD_FUNCTION);
                         final MappedRecord input = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
                         input.setRecordShortDescription ("record containing the file name and class and method to run");
-                        input.put ("filename", "hdfs://sandbox:9000/data/20160803-16_NIS_CIM_Export_b4_Bruegg.rdf");
+                        input.put ("filename", filename);
                         input.put ("class", "ch.ninecode.cim.ShortCircuit");
                         input.put ("method", "stuff");
                         final Interaction interaction = connection.createInteraction ();
@@ -158,6 +206,8 @@ public class ShortCircuitCalculation
                             writer.close ();
                         }
                     }
+                } else {
+                	log.info("connection = null");
                 }
             }
             catch (ResourceException exception)
@@ -170,6 +220,8 @@ public class ShortCircuitCalculation
                 out.append (string.toString ());
                 writer.close ();
             }
+        } else {
+        	log.info("factory = null");
         }
         return (out.toString ());
     }

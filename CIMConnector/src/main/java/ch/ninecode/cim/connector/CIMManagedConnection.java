@@ -78,12 +78,12 @@ public class CIMManagedConnection implements ManagedConnection
             _info = (CIMConnectionRequestInfo)info;
 
         // create the configuration
-        SparkConf configuration = new SparkConf (false);
+        SparkConf configuration = new SparkConf ();
         configuration.setAppName ("CIMConnector");
         if (_info.getMaster () != "")
             configuration.setMaster (_info.getMaster ());
         else
-            configuration.setMaster ("local[*]"); // run Spark locally with as many worker threads as logical cores on the machine
+            configuration.setMaster ("local[2]"); // run Spark locally with as many worker threads as logical cores on the machine
         for (String key : _info.getProperties ().keySet ())
             configuration.set (key, _info.getProperties ().get (key));
         String[] jars = new String[_info.getJars ().size ()];

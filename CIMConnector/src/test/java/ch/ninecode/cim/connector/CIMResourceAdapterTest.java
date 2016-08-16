@@ -127,6 +127,8 @@ public class CIMResourceAdapterTest
     @Test
     public void testRead () throws Exception
     {
+    	String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
+    	
         long ELEMENTS = new Long (351979l);
         final Properties properties = new Properties ();
         properties.setProperty (Context.INITIAL_CONTEXT_FACTORY, "org.apache.openejb.client.LocalInitialContextFactory");
@@ -140,7 +142,7 @@ public class CIMResourceAdapterTest
         spec.setFunctionName (CIMInteractionSpec.READ_FUNCTION);
         final MappedRecord input = connectionFactory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
         input.setRecordShortDescription ("record containing the file name with key filename");
-        input.put ("filename", "hdfs://sandbox:9000/data/NIS_CIM_Export_NS_INITIAL_FILL.rdf");
+        input.put ("filename", filename);
         final MappedRecord output = connectionFactory.getRecordFactory ().createMappedRecord (CIMMappedRecord.OUTPUT);
         output.setRecordShortDescription ("record that will return key count");
         final Interaction interaction = connection.createInteraction ();

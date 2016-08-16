@@ -24,7 +24,7 @@ define
         /**
          * The user specific token to access mapbox tiles.
          */
-        var TheToken = "pk.eyJ1IjoiZGVycmlja29zd2FsZCIsImEiOiJjaWV6b2szd3MwMHFidDRtNDZoejMyc3hsIn0.wnEkePEuhYiNcXDLACSxVw";
+        var TheToken = "pk.eyJ1IjoibWFlZyIsImEiOiJjaXJwYnY2eHgwMDl4aG5rd2toMnBicW4wIn0.7bjgoRvQPWVnGrsxuHQiYg";
 
         /**
          * The last selected feature.
@@ -106,10 +106,11 @@ define
          */
         function connect (event)
         {
+        	var restURL = "http://sandbox:8090/cimweb/cim/ShortCircuitCalculation";
             var xmlhttp;
 
             xmlhttp = new XMLHttpRequest ();
-            xmlhttp.open ("GET", "http://localhost:8080/cimweb/cim/ShortCircuitCalculation", true);
+            xmlhttp.open ("GET", restURL, true);
             xmlhttp.setRequestHeader ("Accept", "application/json");
             xmlhttp.onreadystatechange = function ()
             {
