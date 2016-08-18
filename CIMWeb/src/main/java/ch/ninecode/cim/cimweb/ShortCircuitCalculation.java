@@ -5,9 +5,12 @@ import java.util.logging.Logger;
 
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
 import javax.naming.Context;
 import java.util.Properties;
@@ -46,7 +49,7 @@ import ch.ninecode.cim.connector.CIMResultSet;
 )
 
 @Stateless
-@Path("/ShortCircuitCalculation")
+@Path("/ShortCircuitCalculation/{file}")
 public class ShortCircuitCalculation
 {
     @Resource (lookup="openejb:Resource/CIMConnector.rar")
@@ -74,15 +77,15 @@ public class ShortCircuitCalculation
 
     @SuppressWarnings ("unchecked")
     @GET
-    @Produces({"text/plain", "application/json"})
-    public String GetShortCircuitData ()
+    @Path("{p:/?}{item:((.*)?)}")
+    @Produces ({"text/plain", "application/json"})
+    public String GetShortCircuitData (@PathParam("file") String filename, @PathParam("item") String item)
     {
     	Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     	log.setLevel(Level.INFO);
     	log.info("GetShortCircuitData, logger log.servere");
     	
-    	String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
-    	
+        String transformer = (null != item && !item.equals ("")) ? item : null;
         StringBuffer out = new StringBuffer ();
         
         if (factory == null) {
@@ -125,13 +128,19 @@ public class ShortCircuitCalculation
                 {
                     try
                     {
+                        String full_file = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
                         final CIMInteractionSpecImpl spec = new CIMInteractionSpecImpl ();
                         spec.setFunctionName (CIMInteractionSpec.EXECUTE_METHOD_FUNCTION);
                         final MappedRecord input = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
                         input.setRecordShortDescription ("record containing the file name and class and method to run");
-                        input.put ("filename", filename);
+                        input.put ("filename", full_file);
                         input.put ("class", "ch.ninecode.cim.ShortCircuit");
-                        input.put ("method", "stuff");
+                        if (null == transformer)
+                            input.put ("method", "preparation");
+                        else
+                            input.put ("method", "stuff");
+                        if (null != transformer)
+                            input.put ("transformer", transformer);
                         final Interaction interaction = connection.createInteraction ();
                         final Record output = interaction.execute (spec, input);
                         if ((null == output) || !output.getClass ().isAssignableFrom (CIMResultSet.class))
@@ -141,28 +150,43 @@ public class ShortCircuitCalculation
                             CIMResultSet resultset = (CIMResultSet)output;
                             try
                             {
-                                out.append ("{ \"type\": \"FeatureCollection\",\n\"features\": [");
-                                while (resultset.next ())
+                                if (null != transformer)
                                 {
-                                    out.append ("\n{ \"type\": \"Feature\",\n" +
-                                        "\"geometry\": {\"type\": \"Point\", \"coordinates\": [" + resultset.getString (12) + ", " + resultset.getString (13) + "]},\n" +
-                                        "\"properties\": {" +
-                                        "\"mRID\": \"" + resultset.getString (1) + "\", " +
-                                        "\"node\": \"" + resultset.getString (2) + "\", " +
-                                        "\"transformer\": \"" + resultset.getString (3) + "\", " +
-                                        "\"r\": \"" + resultset.getDouble (4) + "\", " +
-                                        "\"x\": \"" + resultset.getDouble (5) + "\", " +
-                                        "\"r0\": \"" + resultset.getDouble (6) + "\", " +
-                                        "\"x0\": \"" + resultset.getDouble (7) + "\", " +
-                                        "\"fuses\": \"" + resultset.getString (8) + "\", " +
-                                        "\"ik\": \"" + resultset.getDouble (9) + "\", " +
-                                        "\"ik3pol\": \"" + resultset.getDouble (10) + "\", " +
-                                        "\"ip\": \"" + resultset.getDouble (11) + "\"" +
-                                            "}\n" +
-                                        "},");
+                                    out.append ("{ \"type\": \"FeatureCollection\",\n\"features\": [\n");
+                                    while (resultset.next ())
+                                    {
+                                        out.append ("\n{ \"type\": \"Feature\",\n" +
+                                            "\"geometry\": {\"type\": \"Point\", \"coordinates\": [" + resultset.getString (15) + ", " + resultset.getString (16) + "]},\n" +
+                                            "\"properties\": {" +
+                                            "\"mRID\": \"" + resultset.getString (1) + "\", " +
+                                            "\"node\": \"" + resultset.getString (2) + "\", " +
+                                            "\"transformer\": \"" + resultset.getString (3) + "\", " +
+                                            "\"r\": \"" + resultset.getDouble (4) + "\", " +
+                                            "\"x\": \"" + resultset.getDouble (5) + "\", " +
+                                            "\"r0\": \"" + resultset.getDouble (6) + "\", " +
+                                            "\"x0\": \"" + resultset.getDouble (7) + "\", " +
+                                            "\"fuses\": \"" + resultset.getString (8) + "\", " +
+                                            "\"ik\": \"" + resultset.getDouble (9) + "\", " +
+                                            "\"ik3pol\": \"" + resultset.getDouble (10) + "\", " +
+                                            "\"ip\": \"" + resultset.getDouble (11) + "\", " +
+                                            "\"wires_valid\": " + resultset.getBoolean (12) + ", " +
+                                            "\"trafo_valid\": " + resultset.getBoolean (13) + ", " +
+                                            "\"fuse_valid\": " + resultset.getBoolean (14) +
+                                                "}\n" +
+                                            "},");
+                                    }
+                                    out.deleteCharAt (out.length () - 1); // get rid of trailing comma
+                                    out.append ("\n] }\n");
                                 }
-                                out.deleteCharAt (out.length () - 1); // get rid of trailing comma
-                                out.append ("\n] }\n");
+                                else
+                                {
+                                    out.append ("[\n");
+                                    while (resultset.next ())
+                                        out.append ("\"" + resultset.getString (1) + "\",\n");
+                                    out.deleteCharAt (out.length () - 1); // get rid of trailing newline
+                                    out.deleteCharAt (out.length () - 1); // get rid of trailing comma
+                                    out.append ("\n]\n");
+                                }
                                 resultset.close ();
                             }
                             catch (SQLException sqlexception)

@@ -129,7 +129,7 @@ public class CIMResourceAdapterTest
     {
     	String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
     	
-        long ELEMENTS = new Long (351979l);
+        long ELEMENTS = new Long (351980l);
         final Properties properties = new Properties ();
         properties.setProperty (Context.INITIAL_CONTEXT_FACTORY, "org.apache.openejb.client.LocalInitialContextFactory");
         properties.setProperty ("openejb.deployments.classpath.include", ".*resource-injection.*");
@@ -157,6 +157,8 @@ public class CIMResourceAdapterTest
     @Test
     public void testReadEnergyConsumer () throws Exception
     {
+    	String filename = "hdfs://sandbox:8020/user/maeg/NIS/NIS_CIM.rdf";
+    	
         final Properties properties = new Properties ();
         properties.setProperty (Context.INITIAL_CONTEXT_FACTORY, "org.apache.openejb.client.LocalInitialContextFactory");
         properties.setProperty ("openejb.deployments.classpath.include", ".*resource-injection.*");
@@ -169,7 +171,7 @@ public class CIMResourceAdapterTest
         spec.setFunctionName (CIMInteractionSpec.GET_DATAFRAME_FUNCTION);
         final MappedRecord input = connectionFactory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
         input.setRecordShortDescription ("record containing the file name with key filename and sql query with key query");
-        input.put ("filename", "hdfs://sandbox:9000/data/NIS_CIM_Export_NS_INITIAL_FILL.rdf");
+        input.put ("filename", filename);
         input.put ("query", "select s.sup.sup.sup.sup.mRID mRID, s.sup.sup.sup.sup.aliasName aliasName, s.sup.sup.sup.sup.name name, s.sup.sup.sup.sup.description description, p.xPosition, p.yPosition from EnergyConsumer s, PositionPoint p where s.sup.sup.sup.Location = p.Location and p.sequenceNumber = 0");
         final Interaction interaction = connection.createInteraction ();
         final Record output = interaction.execute (spec, input);

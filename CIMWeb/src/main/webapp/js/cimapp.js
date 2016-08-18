@@ -27,6 +27,11 @@ define
         var TheToken = "pk.eyJ1IjoibWFlZyIsImEiOiJjaXJwYnY2eHgwMDl4aG5rd2toMnBicW4wIn0.7bjgoRvQPWVnGrsxuHQiYg";
 
         /**
+         * The GeoJSON contents after load.
+         */
+        var JSON_Data = null;
+
+        /**
          * The last selected feature.
          */
         var CURRENT_FEATURE = null;
@@ -75,6 +80,18 @@ define
         }
 
         /**
+         * Make a select option list of the transformers.
+         * @param transformers The list transformers as an array of strings.
+         */
+        function make_list (transformers)
+        {
+            var select = document.getElementById ("transformer");
+            var options = ""
+            transformers.forEach (function (s) { options += "<option value='" + s + "'>" + s + "</option>\n" } );
+            select.innerHTML = options + "<option value='all'>All</option>";
+        }
+
+        /**
          * Generate a map.
          * @param {Object} points - the points GeoJSON
          * @function make_map
@@ -82,6 +99,22 @@ define
          */
         function make_map (points)
         {
+            JSON_Data = points;
+
+            if (TheMap.getSource ("the points"))
+            {
+                TheMap.removeLayer ("fbad_invalid_house_connection");
+                TheMap.removeLayer ("fbad_semivalid_house_connection");
+                TheMap.removeLayer ("fbad_pseudovalid_house_connection");
+                TheMap.removeLayer ("fbad_valid_house_connection");
+                TheMap.removeLayer ("fok_invalid_house_connection");
+                TheMap.removeLayer ("fok_semivalid_house_connection");
+                TheMap.removeLayer ("fok_pseudovalid_house_connection");
+                TheMap.removeLayer ("fok_valid_house_connection");
+                TheMap.removeLayer ("circle_highlight");
+                TheMap.removeSource ("the points");
+            }
+
             TheMap.addSource
             (
                 "the points",
@@ -93,7 +126,14 @@ define
             );
 
             // simple circle from zoom level 8 to 22
-            TheMap.addLayer (circle_layer ("circle_house_connection", null, "rgb(255, 0, 0)"));
+            TheMap.addLayer (circle_layer ("fbad_invalid_house_connection", ["all", ["==", "trafo_valid", false],["==", "wires_valid", false],["==", "fuse_valid", false]], "rgb(255, 0, 255)"));
+            TheMap.addLayer (circle_layer ("fbad_semivalid_house_connection", ["all", ["==", "trafo_valid", false],["==", "wires_valid", true],["==", "fuse_valid", false]], "rgb(255, 165, 255)"));
+            TheMap.addLayer (circle_layer ("fbad_pseudovalid_house_connection", ["all", ["==", "trafo_valid", true],["==", "wires_valid", false],["==", "fuse_valid", false]], "rgb(128, 128, 255)"));
+            TheMap.addLayer (circle_layer ("fbad_valid_house_connection", ["all", ["==", "trafo_valid", true],["==", "wires_valid", true],["==", "fuse_valid", false]], "rgb(0, 255, 255)"));
+            TheMap.addLayer (circle_layer ("fok_invalid_house_connection", ["all", ["==", "trafo_valid", false],["==", "wires_valid", false],["==", "fuse_valid", true]], "rgb(255, 0, 0)"));
+            TheMap.addLayer (circle_layer ("fok_semivalid_house_connection", ["all", ["==", "trafo_valid", false],["==", "wires_valid", true],["==", "fuse_valid", true]], "rgb(255, 165, 0)"));
+            TheMap.addLayer (circle_layer ("fok_pseudovalid_house_connection", ["all", ["==", "trafo_valid", true],["==", "wires_valid", false],["==", "fuse_valid", true]], "rgb(128, 128, 0)"));
+            TheMap.addLayer (circle_layer ("fok_valid_house_connection", ["all", ["==", "trafo_valid", true],["==", "wires_valid", true],["==", "fuse_valid", true]], "rgb(0, 255, 0)"));
             TheMap.addLayer (circle_layer ("circle_highlight", ["==", "mRID", ""], "rgb(255, 255, 0)"));
         }
 
@@ -106,11 +146,23 @@ define
          */
         function connect (event)
         {
-        	var restURL = "http://sandbox:8090/cimweb/cim/ShortCircuitCalculation";
+        	var host = "http://sandbox:8090";
+            var file;
+            var transformer;
+            var url;
             var xmlhttp;
 
+            file = document.getElementById ("cim_file").value;
+            transformer = document.getElementById ("transformer").value;
+            url = host + "/cimweb/cim/ShortCircuitCalculation/"
+            if ("" != file)
+                url = url + encodeURIComponent (file);
+            else
+                url = url + encodeURIComponent ("20160803-16_NIS_CIM_Export_b4_Bruegg")
+            if ("" != transformer)
+                url = url + "/" + transformer;
             xmlhttp = new XMLHttpRequest ();
-            xmlhttp.open ("GET", restURL, true);
+            xmlhttp.open ("GET", url, true);
             xmlhttp.setRequestHeader ("Accept", "application/json");
             xmlhttp.onreadystatechange = function ()
             {
@@ -122,7 +174,10 @@ define
                     if (200 == xmlhttp.status || 201 == xmlhttp.status || 202 == xmlhttp.status)
                     {
                         resp = JSON.parse (xmlhttp.responseText);
-                        make_map (resp);
+                        if (Array.isArray (resp))
+                            make_list (resp);
+                        else
+                            make_map (resp);
                     }
                     else
                         alert ("status: " + xmlhttp.status + ": " + xmlhttp.responseText);
