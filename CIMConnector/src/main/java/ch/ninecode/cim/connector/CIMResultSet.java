@@ -21,6 +21,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.List;
 
 import javax.resource.cci.Record;
 
@@ -116,6 +117,16 @@ public class CIMResultSet implements Record, ResultSet
         return (_LastNull);
     }
 
+    public List getList (int columnIndex) throws SQLException
+    {
+        if (null == _Rows) throw new SQLException (INVALID);
+        Row row = _Rows[_Index];
+        List value = (List<Object>) row.getList (columnIndex - 1);
+        _LastNull = null == value;
+        List ret = _LastNull ? null : value;
+        return (ret);
+    }
+    
     @Override
     public String getString (int columnIndex) throws SQLException
     {
