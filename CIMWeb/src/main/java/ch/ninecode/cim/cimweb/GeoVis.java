@@ -130,6 +130,9 @@ public class GeoVis {
                                 	String[] propList = properties.substring(1, properties.length() - 1).split(",");
                                 	String nisNumber = propList[0];
                                 	String name = propList[1];
+                                	String aliasName = propList[2];
+                                	String location = propList[3];
+                                	String baseVoltage = propList[4];
                                 	
                                 	List<String> coordinates = (List<String>) resultset.getList (2);
                                 	String coordString = "";
@@ -142,7 +145,9 @@ public class GeoVis {
                                         "\"geometry\": {\"type\": \"LineString\", \"coordinates\": [" + coordString + "]},\n" +
                                         "\"properties\": {" +
                                         "\"nis-nummer\": \"" + nisNumber + "\", " +
-                                        "\"name\": \"" + name + "\"" +
+                                        "\"aliasName\": \"" + aliasName + "\", " +
+                                        "\"name\": \"" + name + "\", " +
+                                        "\"baseVoltage\": \"" + baseVoltage + "\"" +
                                             "}\n" +
                                         "},");
                                 }

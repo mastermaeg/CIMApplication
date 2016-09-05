@@ -1,0 +1,32 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0
+}
+
+#header {
+    height: 5rem;
+    background-color: blue;
+}
+
+#footer {
+    height: 2rem;
+    background-color: blue;
+}
+
+h2 {
+    text-align: center;
+    margin: 0;
+    padding: 1rem;
+}
+
+h5 {
+
+}
+
+.map {
+    height: calc(100% - 5rem);
+    width: 100%;
+    background-color: white;
+}
