@@ -127,10 +127,11 @@ public class CIMManagedConnection implements ManagedConnection
      */
     public void destroy () throws ResourceException
     {
-        close ();
+    	// do not close connection, because same connection will be reused
+    	/*close ();
         _Connection.invalidate ();
         _Connection = null;
-        _Listeners = null;
+        _Listeners = null;*/
     }
 
     /**
