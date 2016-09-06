@@ -2,51 +2,9 @@
  * Created by marku_000 on 06.07.2016.
  */
 
-var testData = {
-    "type": "FeatureCollection",
-    'crs': {
-        'type': 'name',
-        'properties': {
-            'name': 'EPSG:4326'
-        }
-    },
-    "features": [
-        {
-            "geometry": {
-                "type": "LineString",
-                "coordinates": [
-                    [
-                        8.76299086783,
-                        46.8771651140
-                    ],
-                    [
-                        8.66299086783,
-                        46.9771651140
-                    ],
-                    [
-                        8.86299086783,
-                        46.7771651140
-                    ],
-                    [
-                        8.96299086783,
-                        46.6771651140
-                    ]
-                ]
-            },
-            "type": "Feature"
-        },
-        {
-            "geometry": {
-                "type": "Point",
-                "coordinates": [
-                    8.86299086783,
-                    46.8771651140
-                ]
-            },
-            "type": "Feature"
-        }
-    ]
-};
+
+var vectorSource;
+var lastLoadedResolution;
 
 var onInit = function () {
 	
@@ -103,7 +61,7 @@ var createVectorLayer = function (testData) {
     };
 
 	var geoJsonFormat =  new ol.format.GeoJSON();
-	var vectorSource = new ol.source.Vector({
+	vectorSource = new ol.source.Vector({
 	  format: geoJsonFormat,
 	  loader: function(extent, resolution, projection) {
 		var params = {
@@ -111,7 +69,8 @@ var createVectorLayer = function (testData) {
 			xmax: extent[2],
 			ymin: extent[1],
 			ymax: extent[3],
-			maxLines: 20
+			maxLines: document.getElementById("numInput").value
+
 		};
 		var url = 'cim/geovis'
 		$.ajax({
@@ -123,11 +82,15 @@ var createVectorLayer = function (testData) {
 		}); 
 	  },
 	  projection: 'EPSG:4326',
-	  strategy: ol.loadingstrategy.bbox
+	  //strategy: ol.loadingstrategy.bbox
+	  strategy: function(extent, resolution) {
+		  if (lastLoadedResolution > resolution) {
+			  vectorSource.clear(false);
+		  }
+		  lastLoadedResolution = resolution;
+		  return [extent];
+	  },
 	});
-    /*var vectorSource = new ol.source.Vector({
-        features: (new ol.format.GeoJSON()).readFeatures(testData)
-    });*/
 
     var vectorLayer = new ol.layer.Vector({
         source: vectorSource,
@@ -150,4 +113,8 @@ var createCustomControls = function() {
     });
 
     return [mousePositionControl]
+}
+
+var changeMaxLines = function() {
+	vectorSource.clear();
 }

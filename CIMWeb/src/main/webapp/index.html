@@ -11,8 +11,11 @@
     <title>CAS GeoVis</title>
   </head>
   <body onload="onInit()">
-    <div id="header">
-      <h2>Map</h2>
+    <div id="header" class="ol-control">
+      <!--<h2>Map</h2>-->
+	  <label for="numInput">maximale Anzahl Linien: </label><output for="numInput" id="numOutput">500</output>
+	  <br>
+	  <input id="numInput" type="range" min="1" max="1000" value="500" onchange="numOutput.value = numInput.value; changeMaxLines()"/>
     </div>
     <div id="map" class="map"></div>
     <!--<div id="footer">
