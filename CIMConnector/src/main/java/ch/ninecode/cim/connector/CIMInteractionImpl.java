@@ -93,7 +93,7 @@ public class CIMInteractionImpl implements Interaction
                                 }
                                 catch (Exception exception)
                                 {
-                                    throw new ResourceException ("problem", exception);
+                                    throw new ResourceException ("problem1", exception);
                                 }
                             }
                             else
@@ -144,7 +144,7 @@ public class CIMInteractionImpl implements Interaction
                             }
                             catch (Exception exception)
                             {
-                                throw new ResourceException ("problem", exception);
+                                throw new ResourceException ("problem2", exception);
                             }
                         else
                             throw new ResourceException (INVALID_INPUT_ERROR);
@@ -200,7 +200,7 @@ public class CIMInteractionImpl implements Interaction
                                             }
                                             catch (InvocationTargetException ite)
                                             {
-                                                throw new ResourceException ("problem", ite);
+                                                throw new ResourceException ("problem3", ite);
                                             }
                                             break;
                                         }
@@ -208,21 +208,21 @@ public class CIMInteractionImpl implements Interaction
                                 }
                                 catch (ClassNotFoundException cnfe)
                                 {
-                                    throw new ResourceException ("problem", cnfe);
+                                    throw new ResourceException ("problem4", cnfe);
                                 }
                                 catch (InstantiationException ie)
                                 {
-                                    throw new ResourceException ("problem", ie);
+                                    throw new ResourceException ("problem5", ie);
                                 }
                                 catch (IllegalAccessException iae)
                                 {
-                                    throw new ResourceException ("problem", iae);
+                                    throw new ResourceException ("problem6", iae);
                                 }
 
                             }
                             catch (Exception exception)
                             {
-                                throw new ResourceException ("problem", exception);
+                                throw new ResourceException ("problem7", exception);
                             }
                         else
                             throw new ResourceException (INVALID_INPUT_ERROR);
