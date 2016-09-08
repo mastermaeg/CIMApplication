@@ -8,7 +8,7 @@ var lastLoadedResolution;
 
 var onInit = function () {
 	
-    var vectorLayer = this.createVectorLayer(testData);
+    var vectorLayer = this.createVectorLayer();
     var customControls = this.createCustomControls();
     var map = this.createMap(vectorLayer, customControls);
 
@@ -36,7 +36,7 @@ var createMap = function (vectorLayer, customControls) {
     });
 };
 
-var createVectorLayer = function (testData) {
+var createVectorLayer = function () {
 
     var image = new ol.style.Circle({
         radius: 5,
@@ -69,8 +69,11 @@ var createVectorLayer = function (testData) {
 			xmax: extent[2],
 			ymin: extent[1],
 			ymax: extent[3],
-			maxLines: document.getElementById("numInput").value
-
+			reduceLines: document.getElementById("numFlag").checked,
+			maxLines: document.getElementById("numInput").value,
+			douglasPeuker: document.getElementById("dpFlag").checked,
+			douglasPeukerFactor: document.getElementById("dpFactor").value, 
+			resolution: resolution
 		};
 		var url = 'cim/geovis'
 		$.ajax({

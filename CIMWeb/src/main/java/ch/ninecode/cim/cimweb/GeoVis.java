@@ -78,7 +78,11 @@ public class GeoVis {
     					      @QueryParam("ymin") String ymin,
     					      @QueryParam("xmax") String xmax,
     					      @QueryParam("ymax") String ymax,
-    					      @QueryParam("maxLines") String maxLines)
+    					      @QueryParam("maxLines") String maxLines,
+    					      @QueryParam("douglasPeuker") String dougPeuk,
+    					      @QueryParam("douglasPeukerFactor") String dougPeukFactor,
+    					      @QueryParam("resolution") String resolution,
+    					      @QueryParam("reduceLines") String reduceLines)
     {
     	Logger log = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
     	log.setLevel(Level.INFO);
@@ -111,7 +115,11 @@ public class GeoVis {
                         input.put ("xmax", xmax);
                         input.put ("ymin", ymin);
                         input.put ("ymax", ymax);
+                        input.put ("reduceLines", reduceLines);
                         input.put ("maxLines", maxLines);
+                        input.put ("dougPeuk", dougPeuk);
+                        input.put ("dougPeukFactor", dougPeukFactor);
+                        input.put ("resolution", resolution);
                         final Interaction interaction = connection.createInteraction ();
                         final Record output = interaction.execute (spec, input);
 
@@ -165,7 +173,6 @@ public class GeoVis {
                                 out.append (string.toString ());
                                 writer.close ();
                             }
-                            log.info("Result, logger log.info");
                         }
                     }
                     catch (ResourceException resourceexception)
