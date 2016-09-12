@@ -4,6 +4,9 @@ import java.io.PrintWriter;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import scala.Function1;
+import scala.runtime.BoxedUnit;
+
 import javax.resource.NotSupportedException;
 import javax.resource.ResourceException;
 import javax.resource.spi.ConnectionEvent;
@@ -19,6 +22,9 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
 
+import ch.ninecode.cim.*;
+import ch.ninecode.model.*;
+
 /**
  * Connection to Apache Spark (http://spark.apache.org).
  * Assumes access to maven packages like:
@@ -33,6 +39,7 @@ public class CIMManagedConnection implements ManagedConnection
 {
     private static final String TRANSACTIONS_NOT_SUPPORTED_ERROR = "Transactions not supported";
 
+    protected CIMResourceAdapter _Adapter;
     protected Subject _Subject;
     protected CIMConnectionRequestInfo _RequestInfo;
     protected CIMConnection _Connection;
@@ -44,14 +51,12 @@ public class CIMManagedConnection implements ManagedConnection
     /**
      * Constructor for CIMManagedConnection
      */
-    public CIMManagedConnection (Subject subject, ConnectionRequestInfo info)
+    public CIMManagedConnection (CIMResourceAdapter adapter)
     {
         super ();
+        _Adapter = adapter;
         _Listeners = new Vector<> ();
         _PrintWriter = null;
-        _Subject = subject;
-        if ((null != info) && (info.getClass ().isAssignableFrom (CIMConnectionRequestInfo.class)))
-            _RequestInfo = (CIMConnectionRequestInfo)info;
     }
 
     public void close ()
@@ -74,6 +79,7 @@ public class CIMManagedConnection implements ManagedConnection
         CIMConnectionRequestInfo _info;
 
         logger = getLogWriter ();
+        _Subject = subject;
         if ((null == info) || (!info.getClass ().isAssignableFrom (CIMConnectionRequestInfo.class)))
             _info = new CIMConnectionRequestInfo ();
         else
@@ -90,17 +96,569 @@ public class CIMManagedConnection implements ManagedConnection
             configuration.setMaster ("local[2]"); // run Spark locally with as many worker threads as logical cores on the machine
         for (String key : _info.getProperties ().keySet ())
             configuration.set (key, _info.getProperties ().get (key));
-        String[] jars = new String[_info.getJars ().size ()];
-        configuration.setJars (_info.getJars ().toArray (jars));
+        String[] jars = new String[_info.getJars ().size () + 1];
+        jars = _info.getJars ().toArray (jars);
+        jars[jars.length - 1] = _Adapter.getCIMScalaJarPath ();
+        configuration.setJars (jars);
+        configuration.set ("spark.driver.allowMultipleContexts", "false"); // default
         if (null != logger)
             logger.println ("SparkConf = " + configuration.toDebugString ());
-        configuration.set ("spark.driver.allowMultipleContexts", "false"); // default
+//        try
+//        {
+//            System.out.println ("SparkConf = " + configuration.toDebugString ());
+//            System.getProperties ().store (System.out, "current propeties");
+//        }
+//        catch (java.io.IOException e)
+//        {
+//            System.out.println ("couldn't write properties");
+//        }
 
         // so far, it only works for Spark standalone (as above with master set to spark://sandbox:7077
         // here are some options I tried for Yarn access master set to "yarn-client" that didn't work
 //      configuration.setMaster ("yarn-client"); // assumes a resource manager is specified in yarn-site.xml, e.g. sandbox:8032
 //      configuration.setSparkHome ("/home/derrick/spark-1.6.0-bin-hadoop2.6"); // ("/usr/local/spark")
 //      configuration.setExecutorEnv ("YARN_CONF_DIR", "/home/derrick/spark-1.6.0-bin-hadoop2.6/conf"); // ("YARN_CONF_DIR", "/usr/local/hadoop/etc/hadoop")
+
+        // register low level classes
+        Class<?>[] c1 = { Element.class, BasicElement.class, Unknown.class };
+        configuration.registerKryoClasses (c1);
+
+        // register CIM case classes
+        // this is really Byzantine, all I need is the apply() method,
+        // but all the rest are required for some reason,
+        // ToDo: will have to fix this soon
+        scala.Function1<CIMSubsetter<?>, BoxedUnit> fn = new scala.Function1<CIMSubsetter<?>, BoxedUnit> ()
+        {
+            public BoxedUnit apply (CIMSubsetter<?> sub)
+            {
+                Class<?>[] array = {sub.runtime_class ()};
+                configuration.registerKryoClasses (array);
+                return (BoxedUnit.UNIT);
+            }
+
+            @Override
+            public <A> Function1<CIMSubsetter<?>, A> andThen (Function1<BoxedUnit, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcDD$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcDF$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcDI$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcDJ$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcFD$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcFF$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcFI$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcFJ$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcID$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcIF$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcII$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcIJ$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcJD$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcJF$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcJI$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcJJ$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcVD$sp (Function1<BoxedUnit, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcVF$sp (Function1<BoxedUnit, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcVI$sp (Function1<BoxedUnit, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcVJ$sp (Function1<BoxedUnit, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcZD$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcZF$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcZI$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<Object, A> andThen$mcZJ$sp (Function1<Object, A> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public double apply$mcDD$sp (double arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public double apply$mcDF$sp (float arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public double apply$mcDI$sp (int arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public double apply$mcDJ$sp (long arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public float apply$mcFD$sp (double arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public float apply$mcFF$sp (float arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public float apply$mcFI$sp (int arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public float apply$mcFJ$sp (long arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public int apply$mcID$sp (double arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public int apply$mcIF$sp (float arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public int apply$mcII$sp (int arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public int apply$mcIJ$sp (long arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public long apply$mcJD$sp (double arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public long apply$mcJF$sp (float arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public long apply$mcJI$sp (int arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public long apply$mcJJ$sp (long arg0)
+            {
+                // TODO Auto-generated method stub
+                return 0;
+            }
+
+            @Override
+            public void apply$mcVD$sp (double arg0)
+            {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void apply$mcVF$sp (float arg0)
+            {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void apply$mcVI$sp (int arg0)
+            {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void apply$mcVJ$sp (long arg0)
+            {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public boolean apply$mcZD$sp (double arg0)
+            {
+                // TODO Auto-generated method stub
+                return false;
+            }
+
+            @Override
+            public boolean apply$mcZF$sp (float arg0)
+            {
+                // TODO Auto-generated method stub
+                return false;
+            }
+
+            @Override
+            public boolean apply$mcZI$sp (int arg0)
+            {
+                // TODO Auto-generated method stub
+                return false;
+            }
+
+            @Override
+            public boolean apply$mcZJ$sp (long arg0)
+            {
+                // TODO Auto-generated method stub
+                return false;
+            }
+
+            @Override
+            public <A> Function1<A, BoxedUnit> compose (Function1<A, CIMSubsetter<?>> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcDD$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcDF$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcDI$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcDJ$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcFD$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcFF$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcFI$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcFJ$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcID$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcIF$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcII$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcIJ$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcJD$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcJF$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcJI$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcJJ$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, BoxedUnit> compose$mcVD$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, BoxedUnit> compose$mcVF$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, BoxedUnit> compose$mcVI$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, BoxedUnit> compose$mcVJ$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcZD$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcZF$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcZI$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+
+            @Override
+            public <A> Function1<A, Object> compose$mcZJ$sp (Function1<A, Object> arg0)
+            {
+                // TODO Auto-generated method stub
+                return null;
+            }
+        };
+        CHIM.apply_to_all_classes (fn);
+
+        // register edge related classes
+        Class<?>[] c2 = { PreEdge.class, Extremum.class, Edge.class };
+        configuration.registerKryoClasses (c2);
 
         // make a Spark context and SQL context
         _SparkContext = SparkContext.getOrCreate (configuration);
@@ -129,7 +687,8 @@ public class CIMManagedConnection implements ManagedConnection
     {
     	// do not close connection, because same connection will be reused
     	/*close ();
-        _Connection.invalidate ();
+        if (null != _Connection)
+            _Connection.invalidate ();
         _Connection = null;
         _Listeners = null;*/
     }
@@ -139,7 +698,7 @@ public class CIMManagedConnection implements ManagedConnection
      */
     public void cleanup () throws ResourceException
     {
-        _Connection.invalidate ();
+        // no client state, right?
     }
 
     /**

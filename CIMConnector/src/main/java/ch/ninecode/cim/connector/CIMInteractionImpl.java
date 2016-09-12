@@ -2,8 +2,6 @@ package ch.ninecode.cim.connector;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
 
 import javax.resource.ResourceException;
 import javax.resource.cci.Connection;
@@ -58,6 +56,30 @@ public class CIMInteractionImpl implements Interaction
         return (_Connection);
     }
 
+    protected DataFrame readFile (SQLContext context, String filename) throws ResourceException
+    {
+        DataFrame element = context.read ().format ("ch.ninecode.cim").option ("StorageLevel", "MEMORY_AND_DISK_SER").load (filename);
+        org.apache.spark.sql.execution.QueryExecution plan = element.queryExecution ();
+        String test = plan.toString ();
+//        res9: String =
+//        == Parsed Logical Plan ==
+//        Relation[sup#5101] CIMRelation
+//
+//        == Analyzed Logical Plan ==
+//        sup: element
+//        Relation[sup#5101] CIMRelation
+//
+//        == Optimized Logical Plan ==
+//        Relation[sup#5101] CIMRelation
+//
+//        == Physical Plan ==
+//        Scan CIMRelation[sup#5101] InputPaths: hdfs://sandbox:9000/data/NIS_CIM_Export_sias_current_20160816_V8_Bruegg.rdf
+        if (!test.contains ("InputPaths"))
+            throw new ResourceException ("input file not found: " + filename);
+
+        return (element);
+    }
+
     /**
      * @see Interaction#execute(InteractionSpec, Record, Record)
      */
@@ -85,11 +107,83 @@ public class CIMInteractionImpl implements Interaction
                                 {
                                     String filename = (String)((CIMMappedRecord) input).get ("filename");
                                     SQLContext sql = ((CIMConnection)getConnection ())._ManagedConnection._SqlContext;
-                                    /* DataFrame dataframe = */ sql.sql ("create temporary table elements using ch.ninecode.cim options (path '" + filename + "')");
-                                    DataFrame count = sql.sql ("select count(*) from elements");
-                                    long num = count.head ().getLong (0);
+                                    long num = readFile (sql, filename).count ();
                                     ((CIMMappedRecord) output).put ("count", new Long (num));
                                     ret = true;
+                                }
+                                catch (Exception exception)
+                                {
+                                    throw new ResourceException ("problem", exception);
+                                }
+                            }
+                            else
+                                throw new ResourceException (INVALID_OUTPUT_ERROR);
+                        else
+                            throw new ResourceException (INVALID_INPUT_ERROR);
+                        break;
+                    case CIMInteractionSpec.GET_STRING_FUNCTION:
+                        if (input.getRecordName ().equals (CIMMappedRecord.INPUT))
+                            if (output.getRecordName ().equals (CIMMappedRecord.OUTPUT))
+                            {
+                                ((CIMMappedRecord) output).clear ();
+                                try
+                                {
+                                    CIMMappedRecord record = (CIMMappedRecord)input;
+                                    CIMConnection connection = (CIMConnection)getConnection ();
+                                    String filename = record.get ("filename").toString ();
+                                    String cls = record.get ("class").toString ();
+                                    String method = record.get ("method").toString ();
+                                    SparkContext sc = connection._ManagedConnection._SparkContext;
+                                    SQLContext sql = connection._ManagedConnection._SqlContext;
+                                    String args = "";
+                                    for (Object key: record.keySet ())
+                                        if ((key != "filename") && (key != "class") && (key != "method"))
+                                            args +=
+                                                ((0 == args.length ()) ? "" : ",")
+                                                + key.toString ()
+                                                + "="
+                                                + record.get (key).toString ();
+                                    try
+                                    {
+                                        Class<?> c = Class.forName (cls);
+                                        Object _obj = c.newInstance();
+
+                                        Method[] allMethods = c.getDeclaredMethods();
+                                        for (Method _method : allMethods)
+                                        {
+                                            String name = _method.getName();
+                                            if (name.equals (method))
+                                            {
+                                                try
+                                                {
+                                                    readFile (sql, filename);
+                                                    _method.setAccessible (true);
+                                                    Object o = _method.invoke (_obj, sc, sql, args);
+                                                    String result = (String)o;
+                                                    ((CIMMappedRecord) output).put ("result", result);
+                                                    ret = true;
+                                                }
+                                                catch (InvocationTargetException ite)
+                                                {
+                                                    throw new ResourceException ("problem", ite);
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    catch (ClassNotFoundException cnfe)
+                                    {
+                                        throw new ResourceException ("problem", cnfe);
+                                    }
+                                    catch (InstantiationException ie)
+                                    {
+                                        throw new ResourceException ("problem", ie);
+                                    }
+                                    catch (IllegalAccessException iae)
+                                    {
+                                        throw new ResourceException ("problem", iae);
+                                    }
+
                                 }
                                 catch (Exception exception)
                                 {
@@ -133,12 +227,11 @@ public class CIMInteractionImpl implements Interaction
                         if (input.getRecordName ().equals (CIMMappedRecord.INPUT))
                             try
                             {
-                                String filename = (String)((CIMMappedRecord) input).get ("filename");
-                                String query = (String)((CIMMappedRecord) input).get ("query");
+                                CIMMappedRecord record = (CIMMappedRecord)input;
+                                String filename = record.get ("filename").toString ();
+                                String query = record.get ("query").toString ();
                                 SQLContext sql = ((CIMConnection)getConnection ())._ManagedConnection._SqlContext;
-                                /* DataFrame dataframe = */ sql.sql ("create temporary table elements using ch.ninecode.cim options (path '" + filename + "')");
-                                DataFrame count = sql.sql ("select count(*) from elements");
-                                /* long num = */ count.head ().getLong (0);
+                                readFile (sql, filename);
                                 DataFrame result = sql.sql (query);
                                 ret = new CIMResultSet (result.schema (), result.collect ());
                             }
@@ -186,13 +279,7 @@ public class CIMInteractionImpl implements Interaction
                                         {
                                             try
                                             {
-                                                String[] tables = sql.tableNames ();
-                                                if (!Arrays.asList (tables).contains ("elements"))
-                                                {
-                                                    /* DataFrame dataframe = */ sql.sql ("create temporary table elements using ch.ninecode.cim options (path '" + filename + "')");
-                                                    DataFrame count = sql.sql ("select count(*) from elements");
-                                                    /* long num = */ count.head ().getLong (0);
-                                                }
+                                                readFile (sql, filename);
                                                 _method.setAccessible (true);
                                                 Object o = _method.invoke (_obj, sc, sql, args);
                                                 DataFrame result = (DataFrame)o;

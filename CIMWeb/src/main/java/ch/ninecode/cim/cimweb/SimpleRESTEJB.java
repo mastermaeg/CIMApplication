@@ -175,7 +175,6 @@ public class SimpleRESTEJB
         //ret.setPassword ("secret"); // not currently used
         ret.getProperties ().put ("spark.driver.memory", "1g");
         ret.getProperties ().put ("spark.executor.memory", "4g");
-        ret.getJars ().add ("C:\\Users\\Markus\\OneDrive\\workspace_win\\CIMScala\\target\\CIMScala-1.6.0-SNAPSHOT.jar");
 
         return (ret);
     }

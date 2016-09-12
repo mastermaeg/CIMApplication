@@ -5,12 +5,10 @@ import java.util.logging.Logger;
 
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
-import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 
 import javax.naming.Context;
 import java.util.Properties;
@@ -68,10 +66,8 @@ public class ShortCircuitCalculation
 //        ret.setPassword ("secret"); // not currently used
         ret.getProperties ().put ("spark.driver.memory", "1g");
         ret.getProperties ().put ("spark.executor.memory", "4g");
-        //ret.getJars ().add ("/home/derrick/code/CIMScala/target/CIMScala-1.6.0-SNAPSHOT.jar");
-        //ret.getJars ().add ("/home/derrick/code/CIMApplication/ShortCircuit/target/ShortCircuit-1.0-SNAPSHOT.jar");
-        ret.getJars ().add ("/home/maeg/nis/CIMScala-1.6.0-SNAPSHOT.jar");
-        ret.getJars ().add ("/home/maeg/nis/ShortCircuit-1.0-SNAPSHOT.jar");
+        ret.getJars ().add ("/opt/apache-tomee-plus-1.7.4/apps/CIMApplication/lib/ShortCircuit-1.0-SNAPSHOT.jar");
+
         return (ret);
     }
 
@@ -86,6 +82,7 @@ public class ShortCircuitCalculation
     	log.info("GetShortCircuitData, logger log.servere");
     	
         String transformer = (null != item && !item.equals ("")) ? item : null;
+        String spreadsheet = "KS_Leistungen"; // ToDo: load up preset values for transformer parameters
         StringBuffer out = new StringBuffer ();
         
         if (factory == null) {
@@ -134,7 +131,8 @@ public class ShortCircuitCalculation
                         final MappedRecord input = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
                         input.setRecordShortDescription ("record containing the file name and class and method to run");
                         input.put ("filename", full_file);
-                        input.put ("class", "ch.ninecode.cim.ShortCircuit");
+                        input.put ("csv", "hdfs://sandbox:9000/data/" + spreadsheet + ".csv");
+                        input.put ("class", "ch.ninecode.sc.ShortCircuit");
                         if (null == transformer)
                             input.put ("method", "preparation");
                         else
