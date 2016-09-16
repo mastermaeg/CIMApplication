@@ -5,17 +5,22 @@
 
 var vectorSource;
 var lastLoadedResolution;
+var map;
 
 var onInit = function () {
 	
     var vectorLayer = this.createVectorLayer();
     var customControls = this.createCustomControls();
-    var map = this.createMap(vectorLayer, customControls);
+    this.createMap(vectorLayer, customControls);
+	
+	map.on('click', function(evt) {
+		this.displayFeatureInfo(evt.pixel);
+	}, this);
 
 };
 
 var createMap = function (vectorLayer, customControls) {
-    var map = new ol.Map({
+    map = new ol.Map({
         target: 'map',
         controls: ol.control.defaults({
             attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
@@ -24,7 +29,8 @@ var createMap = function (vectorLayer, customControls) {
         }).extend(customControls),
         layers: [
             new ol.layer.Tile({
-                source: new ol.source.OSM()
+                source: new ol.source.OSM(),
+				opacity: 0.7
             }),
             vectorLayer
         ],
@@ -117,6 +123,26 @@ var createCustomControls = function() {
 
     return [mousePositionControl]
 }
+
+var displayFeatureInfo = function(pixel) {
+
+	var feature = map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+		return feature;
+	});
+
+	var info = document.getElementById('info');
+	if (feature) {
+		var html = '<table>';
+		html += '<tr><td>Name</td><td>' + feature.get("name") + '</td></tr>';
+		html += '<tr><td>AliasName</td><td>' + feature.get("aliasName") + '</td></tr>';
+		html += '<tr><td>Spannungsebene</td><td>' + feature.get("baseVoltage") + '</td></tr>';
+		html += '<tr><td>NIS-Nummer</td><td>' + feature.get("nis-nummer") + '</td></tr>';
+		html += '</table>';
+		info.innerHTML = html;
+	} else {
+		info.innerHTML = '&nbsp;';
+	}
+};
 
 var changeMaxLines = function() {
 	vectorSource.clear();

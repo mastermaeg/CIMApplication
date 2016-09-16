@@ -18,6 +18,20 @@ html, body {
 	width: 14rem;
 }
 
+#info {
+	position: absolute;
+	left: 0.5rem;
+	bottom: 0.5rem;
+	height: 5rem;
+	width: 20rem;
+	z-index: 1;
+    background-color: rgba(0,60,136,.5);
+	color: white;
+	font-family: Arial;
+	font-size: 0.8rem;
+	padding: 0.5rem;
+}
+
 #header input[type=range] {
 	margin-top: 1rem;
 	width: 100%; 
