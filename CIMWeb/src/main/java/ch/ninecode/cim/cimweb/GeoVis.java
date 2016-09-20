@@ -51,9 +51,8 @@ public class GeoVis {
 		ret = new CIMConnectionSpec();
 		ret.getProperties().put("spark.driver.memory", "1g");
 		ret.getProperties().put("spark.executor.memory", "2g");
-		ret.getJars().add("C:\\Users\\Markus\\OneDrive\\workspace_win\\CIMScala\\target\\CIMScala-1.6.0-SNAPSHOT.jar");
-		ret.getJars().add("C:\\Users\\Markus\\OneDrive\\workspace_win\\CIMApplication\\ShortCircuit\\target\\ShortCircuit-1.0-SNAPSHOT.jar");
-		ret.getJars().add("C:\\Users\\Markus\\OneDrive\\workspace_win\\CASGeoVis\\target\\CASGeoVis-0.0.1-SNAPSHOT.jar");
+		ret.getJars().add("C:\\Users\\Markus\\OneDrive\\workspace_win\\CIMScala\\target\\CIMScala-2.10-1.6.0-1.6.0.jar");
+		ret.getJars().add("C:\\Users\\Markus\\OneDrive\\workspace_win\\CASGeoVis\\target\\CASGeoVis-1.0.0-SNAPSHOT.jar");
 		return (ret);
 	}
 
