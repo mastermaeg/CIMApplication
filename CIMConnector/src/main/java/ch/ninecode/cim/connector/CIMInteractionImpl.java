@@ -1,5 +1,6 @@
 package ch.ninecode.cim.connector;
 
+import java.util.HashMap;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -11,6 +12,7 @@ import javax.resource.cci.Record;
 import javax.resource.cci.ResourceWarning;
 
 import org.apache.spark.SparkContext;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 
@@ -58,8 +60,13 @@ public class CIMInteractionImpl implements Interaction
 
     protected DataFrame readFile (SQLContext context, String filename) throws ResourceException
     {
-        DataFrame element = context.read ().format ("ch.ninecode.cim").option ("StorageLevel", "MEMORY_AND_DISK_SER").load (filename);
-        org.apache.spark.sql.execution.QueryExecution plan = element.queryExecution ();
+        String[] files = filename.split (",");
+        HashMap<String,String> options = new HashMap<> ();
+        options.put ("StorageLevel", "MEMORY_AND_DISK_SER");
+        options.put ("ch.ninecode.cim.make_edges", "true"); // backwards compatibility
+        options.put ("ch.ninecode.cim.do_join", "false");
+        DataFrame element = context.read ().format ("ch.ninecode.cim").options (options).load (files);
+        QueryExecution plan = element.queryExecution ();
         String test = plan.toString ();
 //        res9: String =
 //        == Parsed Logical Plan ==
@@ -135,6 +142,11 @@ public class CIMInteractionImpl implements Interaction
                                     String method = record.get ("method").toString ();
                                     SparkContext sc = connection._ManagedConnection._SparkContext;
                                     SQLContext sql = connection._ManagedConnection._SqlContext;
+                                    Object jars = record.get ("jars");
+                                    if (null != jars)
+                                        for (String jar: jars.toString ().split (","))
+                                            if (!sc.jars().contains (jar))
+                                                sc.addJar (jar);
                                     String args = "";
                                     for (Object key: record.keySet ())
                                         if ((key != "filename") && (key != "class") && (key != "method"))
@@ -253,6 +265,11 @@ public class CIMInteractionImpl implements Interaction
                                 String method = record.get ("method").toString ();
                                 SparkContext sc = connection._ManagedConnection._SparkContext;
                                 SQLContext sql = connection._ManagedConnection._SqlContext;
+                                Object jars = record.get ("jars");
+                                if (null != jars)
+                                    for (String jar: jars.toString ().split (","))
+                                        if (!sc.jars().contains (jar))
+                                            sc.addJar (jar);
 //                                ToDo: don't know the mapping from Java world to Scala world
 //                                HashMap<String,String> map = new HashMap<String,String> ();
 //                                for (Object key: record.keySet ())

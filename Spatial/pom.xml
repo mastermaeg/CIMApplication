@@ -1,18 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <artifactId>CIMApplication</artifactId>
         <groupId>ch.ninecode.cim</groupId>
+        <artifactId>CIMApplication</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
-    <artifactId>ShortCircuit</artifactId>
-    <groupId>ch.ninecode.sc</groupId>
-    <name>ShortCircuit</name>
-    <description>Compute short circuit values using Spark and Scala</description>
+    <groupId>ch.ninecode.sp</groupId>
+    <artifactId>Spatial</artifactId>
+    <name>Spatial</name>
+    <description>Spatial operations for CIM on Spark</description>
     <inceptionYear>2016</inceptionYear>
-    <url>https://github.com/derrickoswald/CIMApplication/tree/master/ShortCircuit</url>
 
     <properties>
         <encoding>UTF-8</encoding>
@@ -128,8 +125,8 @@
                 <configuration>
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
                     <junitxml>.</junitxml>
-                    <filereports>ShortCircuitSuite.txt</filereports>
-                    <suites>ch.ninecode.sc.ShortCircuitSuite</suites>
+                    <filereports>SpatialSuite.txt</filereports>
+                    <suites>ch.ninecode.sp.SpatialSuite</suites>
                 </configuration>
                 <executions>
                     <execution>
@@ -142,5 +139,5 @@
             </plugin>
         </plugins>
     </build>
-
+    
 </project>

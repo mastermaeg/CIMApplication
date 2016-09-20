@@ -19,6 +19,8 @@ import javax.naming.NamingException;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.sql.SQLException;
 import javax.resource.ConnectionFactoryDefinition;
 import javax.resource.spi.TransactionSupport.TransactionSupportLevel;
@@ -35,6 +37,7 @@ import ch.ninecode.cim.connector.CIMInteractionSpec;
 import ch.ninecode.cim.connector.CIMInteractionSpecImpl;
 import ch.ninecode.cim.connector.CIMMappedRecord;
 import ch.ninecode.cim.connector.CIMResultSet;
+import ch.ninecode.sc.ShortCircuit;
 
 @ConnectionFactoryDefinition
 (
@@ -66,7 +69,6 @@ public class ShortCircuitCalculation
 //        ret.setPassword ("secret"); // not currently used
         ret.getProperties ().put ("spark.driver.memory", "1g");
         ret.getProperties ().put ("spark.executor.memory", "4g");
-        ret.getJars ().add ("/opt/apache-tomee-plus-1.7.4/apps/CIMApplication/lib/ShortCircuit-1.0-SNAPSHOT.jar");
 
         return (ret);
     }
@@ -132,6 +134,23 @@ public class ShortCircuitCalculation
                         input.setRecordShortDescription ("record containing the file name and class and method to run");
                         input.put ("filename", full_file);
                         input.put ("csv", "hdfs://sandbox:9000/data/" + spreadsheet + ".csv");
+
+                        // set up the method call details for the CIMConnector
+                        ShortCircuit sc = new ShortCircuit ();
+                        input.put ("class", sc.getClass ().getName ());
+                        // see https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
+                        String path = sc.getClass ().getProtectionDomain ().getCodeSource ().getLocation ().getPath ();
+                        String decodedPath;
+                        try
+                        {
+                            decodedPath = URLDecoder.decode (path, "UTF-8");
+                        }
+                        catch (UnsupportedEncodingException e)
+                        {
+                            decodedPath = path;
+                        }
+                        if (decodedPath.endsWith (".jar"))
+                            input.put ("jars", decodedPath);
                         input.put ("class", "ch.ninecode.sc.ShortCircuit");
                         if (null == transformer)
                             input.put ("method", "preparation");

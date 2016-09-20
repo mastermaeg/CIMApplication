@@ -1,5 +1,8 @@
 package ch.ninecode.sc
 
+import java.util.HashMap
+import java.util.Map
+
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SQLContext
@@ -10,7 +13,6 @@ import org.scalatest.fixture
 import ch.ninecode._
 import ch.ninecode.cim._
 import ch.ninecode.model._
-import ch.ninecode.sc.ShortCircuit;
 
 class ShortCircuitSuite extends fixture.FunSuite
 {
@@ -62,8 +64,12 @@ class ShortCircuitSuite extends fixture.FunSuite
         val filename = FILE_DEPOT + "NIS_CIM_Export_sias_current_20160816_V7_bruegg" + ".rdf"
 
         val start = System.nanoTime ()
-
-        val elements = sql_context.read.format ("ch.ninecode.cim").option ("StorageLevel", "MEMORY_AND_DISK_SER").load (filename)
+        val files = filename.split (",")
+        val options = new HashMap[String, String] ().asInstanceOf[Map[String,String]]
+        options.put ("StorageLevel", "MEMORY_AND_DISK_SER");
+        options.put ("ch.ninecode.cim.make_edges", "true"); // backwards compatibility
+        options.put ("ch.ninecode.cim.do_join", "false");
+        val elements = sql_context.read.format ("ch.ninecode.cim").options (options).load (files:_*)
         val count = elements.count
 
         val read = System.nanoTime ()

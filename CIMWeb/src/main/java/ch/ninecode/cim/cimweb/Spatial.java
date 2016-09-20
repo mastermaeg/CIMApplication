@@ -4,19 +4,20 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.sql.SQLException;
 
 import javax.annotation.Resource;
 import javax.ejb.Stateless;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.Produces;
 import javax.resource.ConnectionFactoryDefinition;
 import javax.resource.ResourceException;
 import javax.resource.cci.Connection;
 import javax.resource.cci.Interaction;
 import javax.resource.cci.MappedRecord;
+import javax.resource.cci.Record;
 import javax.resource.spi.TransactionSupport.TransactionSupportLevel;
 
 import ch.ninecode.cim.connector.CIMConnectionFactory;
@@ -24,7 +25,8 @@ import ch.ninecode.cim.connector.CIMConnectionSpec;
 import ch.ninecode.cim.connector.CIMInteractionSpec;
 import ch.ninecode.cim.connector.CIMInteractionSpecImpl;
 import ch.ninecode.cim.connector.CIMMappedRecord;
-import ch.ninecode.gl.GridLABD;
+import ch.ninecode.cim.connector.CIMResultSet;
+import ch.ninecode.sp.SpatialOperations;
 
 @ConnectionFactoryDefinition
 (
@@ -37,8 +39,8 @@ import ch.ninecode.gl.GridLABD;
 )
 
 @Stateless
-@Path("/GridLabExport/{file}")
-public class GridLabExport
+@Path("/Spatial/{file}")
+public class Spatial
 {
     @Resource (lookup="openejb:Resource/CIMConnector.rar")
     CIMConnectionFactory factory;
@@ -63,9 +65,9 @@ public class GridLabExport
     @SuppressWarnings ("unchecked")
     @GET
     @Path("{p:/?}{item:((.*)?)}")
-    public Response GetGridLABExport (@PathParam("file") String filename, @PathParam("item") String item)
+    @Produces ({"text/plain", "application/json"})
+    public String Spatial (@PathParam("file") String filename, @PathParam("item") String item)
     {
-        String transformer = (null != item && !item.equals ("")) ? item : null;
         StringBuffer out = new StringBuffer ();
         if (null != factory)
         {
@@ -79,16 +81,16 @@ public class GridLabExport
                     {
                         String full_file = "hdfs://sandbox:9000/data/" + filename + ".rdf";
                         final CIMInteractionSpecImpl spec = new CIMInteractionSpecImpl ();
-                        spec.setFunctionName (CIMInteractionSpec.GET_STRING_FUNCTION);
+                        spec.setFunctionName (CIMInteractionSpec.EXECUTE_METHOD_FUNCTION);
                         final MappedRecord input = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.INPUT);
                         input.setRecordShortDescription ("record containing the file name and class and method to run");
                         input.put ("filename", full_file);
 
                         // set up the method call details for the CIMConnector
-                        GridLABD gl = new GridLABD ();
-                        input.put ("class", gl.getClass ().getName ());
+                        SpatialOperations ops = new SpatialOperations ();
+                        input.put ("class", ops.getClass ().getName ());
                         // see https://stackoverflow.com/questions/320542/how-to-get-the-path-of-a-running-jar-file
-                        String path = gl.getClass ().getProtectionDomain ().getCodeSource ().getLocation ().getPath ();
+                        String path = ops.getClass ().getProtectionDomain ().getCodeSource ().getLocation ().getPath ();
                         String decodedPath;
                         try
                         {
@@ -100,19 +102,42 @@ public class GridLabExport
                         }
                         if (decodedPath.endsWith (".jar"))
                             input.put ("jars", decodedPath);
-                        if (null == transformer)
-                            input.put ("method", "preparation");
-                        else
-                            input.put ("method", "stuff");
-                        if (null != transformer)
-                            input.put ("transformer", transformer);
-                        final MappedRecord output = factory.getRecordFactory ().createMappedRecord (CIMMappedRecord.OUTPUT);
-                        output.setRecordShortDescription ("the results of the read operation");
+                        input.put ("method", "nearest");
+
+                        input.put ("psr", "EnergyConsumer");
+                        input.put ("lon", "7.281558");
+                        input.put ("lat", "47.124142");
+                        input.put ("n", "5");
+
                         final Interaction interaction = connection.createInteraction ();
-                        if (interaction.execute (spec, input, output))
+                        final Record output = interaction.execute (spec, input);
+                        if ((null == output) || !output.getClass ().isAssignableFrom (CIMResultSet.class))
+                            throw new ResourceException ("object of class " + output.getClass ().toGenericString () + " is not a ResultSet");
+                        else
                         {
-                            String result = output.get ("result").toString ();
-                            out.append (result);
+                            CIMResultSet resultset = (CIMResultSet)output;
+                            try
+                            {
+                                out.append ("[");
+                                while (resultset.next ())
+                                {
+                                    out.append (resultset.getString (1) + "\",");
+                                }
+                                out.deleteCharAt (out.length () - 1); // get rid of trailing comma
+                                out.append ("\n] }\n");
+                                resultset.close ();
+                            }
+                            catch (SQLException sqlexception)
+                            {
+                                out.append ("SQLException on ResultSet");
+                                out.append ("\n");
+                                StringWriter string = new StringWriter ();
+                                PrintWriter writer = new PrintWriter (string);
+                                sqlexception.printStackTrace (writer);
+                                out.append (string.toString ());
+                                writer.close ();
+                            }
+
                         }
                         interaction.close ();
                         connection.close ();
@@ -157,8 +182,6 @@ public class GridLabExport
                 writer.close ();
             }
         }
-        return (Response.ok (out.toString (), MediaType.APPLICATION_OCTET_STREAM)
-            .header ("content-disposition", "attachment; filename =" + "gridlabd.glm")
-            .build ());
+        return (out.toString ());
     }
 }
