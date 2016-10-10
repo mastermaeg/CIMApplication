@@ -120,7 +120,7 @@
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
-            <!-- enable scalatest -->
+            <!-- enable scalatest 
             <plugin>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest-maven-plugin</artifactId>
@@ -139,7 +139,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 
